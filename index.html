@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Yearly Mosquito Complaint KDE Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --bg: #f5f6f3;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #64748b;
+      --border: #d8ddd4;
+      --accent: #b45309;
+      --accent-dark: #7c2d12;
+      --soft-accent: #fff7ed;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 390px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 28px 28px 24px 28px;
+      overflow-y: auto;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .map-header {
+      background: #111827;
+      color: white;
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid #000;
+    }
+
+    .map-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .map-subtitle {
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-top: 3px;
+    }
+
+    .map-frame-wrap {
+      flex: 1;
+      min-height: 0;
+      padding: 14px;
+    }
+
+    iframe {
+      width: 100%;
+      height: calc(100vh - 105px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+    }
+
+    h1 {
+      font-size: 25px;
+      line-height: 1.15;
+      margin: 0 0 10px 0;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-dark);
+      margin: 28px 0 10px 0;
+    }
+
+    p {
+      font-size: 14px;
+      line-height: 1.55;
+      color: #334155;
+      margin: 0 0 12px 0;
+    }
+
+    .lead {
+      font-size: 15px;
+      color: #1f2937;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0 8px 0;
+    }
+
+    .stat {
+      background: var(--soft-accent);
+      border: 1px solid #fed7aa;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+
+    .controls {
+      margin: 20px 0;
+      padding: 16px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .control-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 8px;
+    }
+
+    .year-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .year-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: white;
+      color: #1f2937;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .year-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .year-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      color: #1f2937;
+      font-weight: 600;
+    }
+
+    .summary-charts {
+      margin: 18px 0 8px 0;
+    }
+
+    .chart-panel {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f8fafc;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .chart-panel summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chart-panel summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .chart-panel summary::after {
+      content: "+";
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .chart-panel[open] summary::after {
+      content: "-";
+    }
+
+    .chart-inner {
+      padding: 0 12px 12px 12px;
+    }
+
+    .mini-chart {
+      width: 100%;
+      height: 155px;
+      display: block;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .chart-caption {
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--muted);
+      margin: 8px 2px 0 2px;
+    }
+
+    ul {
+      padding-left: 18px;
+      margin-top: 6px;
+    }
+
+    li {
+      font-size: 14px;
+      line-height: 1.45;
+      color: #334155;
+      margin-bottom: 7px;
+    }
+
+    .note {
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 18px;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 24px;
+      padding-top: 14px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      iframe {
+        height: 70vh;
+      }
+
+      .map-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <aside class="sidebar">
+      <h1>CMCD Complaint Hotspots (2020-2026)</h1>
+
+      <p class="lead">
+        Interactive demo shows where resident-submitted mosquito complaints were spatially concentrated each year within the District.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat">
+          <div class="stat-label">Years shown</div>
+          <div class="stat-value">7</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">Total reports</div>
+          <div class="stat-value">28,889</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="control-label">Select year</div>
+
+        <div class="year-buttons">
+          <button class="year-btn" data-year="2020">2020</button>
+<button class="year-btn" data-year="2021">2021</button>
+<button class="year-btn" data-year="2022">2022</button>
+<button class="year-btn" data-year="2023">2023</button>
+<button class="year-btn" data-year="2024">2024</button>
+<button class="year-btn" data-year="2025">2025</button>
+<button class="year-btn active" data-year="2026">2026</button>
+        </div>
+
+        <select id="yearSelect">
+          <option value="2020">2020</option>
+<option value="2021">2021</option>
+<option value="2022">2022</option>
+<option value="2023">2023</option>
+<option value="2024">2024</option>
+<option value="2025">2025</option>
+<option value="2026" selected>2026</option>
+        </select>
+      </div>
+
+      <div class="summary-charts">
+        <details class="chart-panel" open>
+          <summary>Annual complaint trend</summary>
+          <div class="chart-inner">
+            <svg id="annualChart" class="mini-chart" role="img" aria-label="Annual complaint trend"></svg>
+            <div class="chart-caption">
+              Total resident-submitted mosquito complaints by calendar year.
+            </div>
+          </div>
+        </details>
+
+        <details class="chart-panel">
+          <summary>Monthly complaint pattern</summary>
+          <div class="chart-inner">
+            <svg id="monthlyChart" class="mini-chart" role="img" aria-label="Monthly complaint pattern"></svg>
+            <div class="chart-caption">
+              Complaints summed by month across all years shown.
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <h2>Introduction</h2>
+      <p>
+      These maps estimate the magnitude of mosquito reports in Collier County using Kernel Density Estimation (KDE)
+      </p>
+      
+      <p>
+      Kernel Density Estimation (KDE) is a statistical technique for estimating the magnitude of an event per area unit (e.g. reports per square km)
+      </p>
+      
+      <h2>Background</h2>
+      <p>
+        Complaint locations were filtered by calendar year and clipped to the Collier County study boundary. For each year, points were projected into NAD83 / UTM Zone 17N so distances were measured in meters.
+      </p>
+
+      <p>
+        A kernel density estimate was calculated for each year using a 1,500-meter smoothing bandwidth. The resulting surface was converted to reports per square kilometer, clipped to the county boundary, and displayed with a fixed 0 to 18 reports per km² color scale across all yearly maps.
+      </p>
+
+      <ul>
+        <li>Darker/brighter KDE areas indicate stronger complaint clustering.</li>
+        <li>White contours show high-density zones based on KDE percentile breaks.</li>
+        <li>The KDE should be interpreted as a smoothed complaint-intensity surface, not a direct mosquito abundance estimate using trap data</li>
+      </ul>
+
+      <div class="footer">
+        Data source: Collier Mosquito GIS service request layer and Collier County boundary layer. Generated using R, sf, spatstat, raster, leaflet, and htmlwidgets.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="map-header">
+        <div>
+          <div class="map-title" id="mapTitle">Mosquito Complaint KDE</div>
+          <div class="map-subtitle" id="mapSubtitle">2026 — 3,715 reports</div>
+        </div>
+      </div>
+
+      <div class="map-frame-wrap">
+        <iframe id="mapFrame" src="maps/sr_kde_2026.html" title="Yearly mosquito complaint KDE map"></iframe>
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    const yearMeta = [
+  {
+    "year": "2020",
+    "file": "maps/sr_kde_2020.html",
+    "label": "2020 — 1,957 reports",
+    "n_reports": 1957
+  },
+  {
+    "year": "2021",
+    "file": "maps/sr_kde_2021.html",
+    "label": "2021 — 2,471 reports",
+    "n_reports": 2471
+  },
+  {
+    "year": "2022",
+    "file": "maps/sr_kde_2022.html",
+    "label": "2022 — 1,901 reports",
+    "n_reports": 1901
+  },
+  {
+    "year": "2023",
+    "file": "maps/sr_kde_2023.html",
+    "label": "2023 — 6,080 reports",
+    "n_reports": 6080
+  },
+  {
+    "year": "2024",
+    "file": "maps/sr_kde_2024.html",
+    "label": "2024 — 6,433 reports",
+    "n_reports": 6433
+  },
+  {
+    "year": "2025",
+    "file": "maps/sr_kde_2025.html",
+    "label": "2025 — 6,332 reports",
+    "n_reports": 6332
+  },
+  {
+    "year": "2026",
+    "file": "maps/sr_kde_2026.html",
+    "label": "2026 — 3,715 reports",
+    "n_reports": 3715
+  }
+];
+    const annualChartData = [{"label":"2020","value":1957},{"label":"2021","value":2471},{"label":"2022","value":1901},{"label":"2023","value":6080},{"label":"2024","value":6433},{"label":"2025","value":6332},{"label":"2026","value":3715}];
+    const monthlyChartData = [{"label":"Jan","value":349},{"label":"Feb","value":307},{"label":"Mar","value":622},{"label":"Apr","value":1212},{"label":"May","value":3279},{"label":"Jun","value":11206},{"label":"Jul","value":3588},{"label":"Aug","value":1775},{"label":"Sep","value":1292},{"label":"Oct","value":1781},{"label":"Nov","value":2019},{"label":"Dec","value":1459}];
+
+    const mapFrame = document.getElementById("mapFrame");
+    const mapSubtitle = document.getElementById("mapSubtitle");
+    const yearSelect = document.getElementById("yearSelect");
+    const buttons = document.querySelectorAll(".year-btn");
+
+    function setYear(year) {
+      const selected = yearMeta.find(d => d.year === String(year));
+
+      if (!selected) {
+        console.error("Year not found:", year);
+        return;
+      }
+
+      mapFrame.src = selected.file;
+      mapSubtitle.textContent = selected.label;
+      yearSelect.value = selected.year;
+
+      buttons.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.year === selected.year);
+      });
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => setYear(btn.dataset.year));
+    });
+
+    yearSelect.addEventListener("change", event => {
+      setYear(event.target.value);
+    });
+
+    function renderMiniBarChart(containerId, data, options) {
+      const svg = document.getElementById(containerId);
+
+      if (!svg || !data || data.length === 0) {
+        return;
+      }
+
+      const width = 330;
+      const height = 155;
+      const margin = {
+        top: 14,
+        right: 10,
+        bottom: 30,
+        left: 38
+      };
+
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+
+      const maxValue = Math.max(...data.map(d => d.value), 1);
+      const barGap = options && options.barGap !== undefined ? options.barGap : 5;
+      const barWidth = innerWidth / data.length - barGap;
+
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      svg.innerHTML = "";
+
+      const ns = "http://www.w3.org/2000/svg";
+
+      function addEl(name, attrs, text) {
+        const el = document.createElementNS(ns, name);
+
+        Object.keys(attrs).forEach(key => {
+          el.setAttribute(key, attrs[key]);
+        });
+
+        if (text !== undefined && text !== null) {
+          el.textContent = text;
+        }
+
+        svg.appendChild(el);
+        return el;
+      }
+
+      [0, 0.5, 1].forEach(t => {
+        const y = margin.top + innerHeight - t * innerHeight;
+
+        addEl("line", {
+          x1: margin.left,
+          y1: y,
+          x2: width - margin.right,
+          y2: y,
+          stroke: "#e5e7eb",
+          "stroke-width": 1
+        });
+      });
+
+      data.forEach((d, i) => {
+        const barHeight = (d.value / maxValue) * innerHeight;
+        const x = margin.left + i * (innerWidth / data.length) + barGap / 2;
+        const y = margin.top + innerHeight - barHeight;
+
+        const bar = addEl("rect", {
+          x: x,
+          y: y,
+          width: Math.max(barWidth, 2),
+          height: barHeight,
+          rx: 3,
+          fill: "#b45309"
+        });
+
+        const title = document.createElementNS(ns, "title");
+        title.textContent = d.label + ": " + d.value.toLocaleString();
+        bar.appendChild(title);
+
+        addEl("text", {
+          x: x + Math.max(barWidth, 2) / 2,
+          y: height - 10,
+          "text-anchor": "middle",
+          "font-size": options && options.smallLabels ? 9 : 10,
+          fill: "#64748b"
+        }, d.label);
+      });
+
+      addEl("text", {
+        x: margin.left - 6,
+        y: margin.top + 4,
+        "text-anchor": "end",
+        "font-size": 10,
+        fill: "#64748b"
+      }, maxValue.toLocaleString());
+
+      addEl("text", {
+        x: margin.left - 6,
+        y: margin.top + innerHeight + 4,
+        "text-anchor": "end",
+        "font-size": 10,
+        fill: "#64748b"
+      }, "0");
+    }
+
+    renderMiniBarChart("annualChart", annualChartData, {
+      barGap: 7,
+      smallLabels: false
+    });
+
+    renderMiniBarChart("monthlyChart", monthlyChartData, {
+      barGap: 3,
+      smallLabels: true
+    });
+  </script>
+
+</body>
+</html>
